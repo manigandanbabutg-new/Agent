@@ -1,4 +1,5 @@
 import os
+
 from flask import Flask, render_template
 from flask_cors import CORS
 
@@ -6,11 +7,18 @@ from app.youtube import youtube_bp
 
 
 def create_app():
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+
+    template_dir = os.path.join(
+        base_dir,
+        "templates"
+    )
 
     app = Flask(
         __name__,
-        template_folder=os.path.join(base_dir, "templates")
+        template_folder=template_dir
     )
 
     CORS(app)
