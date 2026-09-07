@@ -1,3 +1,129 @@
-<html>
-  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+
+<title>Nova AI</title>
+
+<style>
+body {
+    margin:0;
+    height:100vh;
+    display:grid;
+    place-items:center;
+    background:#09090b;
+    color:white;
+    font-family:Arial;
+}
+
+.card {
+    width:300px;
+    padding:35px;
+    text-align:center;
+    border:1px solid #333;
+    border-radius:25px;
+    background:#151518;
+}
+
+.mic {
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    border:0;
+    font-size:35px;
+    cursor:pointer;
+}
+
+.status {
+    margin-top:20px;
+    color:#aaa;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>Nova AI</h2>
+    <p>Say a song name</p>
+
+    <button id="mic"
+            class="mic">
+        🎙️
+    </button>
+
+    <div id="status"
+         class="status">
+        Tap microphone
+    </div>
+</div>
+
+<script>
+const mic = document.getElementById("mic");
+const status = document.getElementById("status");
+
+const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+    status.textContent =
+        "Speech recognition unavailable";
+} else {
+
+    const recognition =
+        new SpeechRecognition();
+
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+        status.textContent =
+            "Listening...";
+    };
+
+    recognition.onresult = async (event) => {
+
+        const command =
+            event.results[0][0].transcript;
+
+        status.textContent =
+            "Playing: " + command;
+
+        const response =
+            await fetch("/youtube/play", {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+                body: JSON.stringify({
+                    command: command
+                })
+            });
+
+        const data =
+            await response.json();
+
+        if (data.success) {
+            window.open(
+                data.url,
+                "_blank"
+            );
+        }
+    };
+
+    recognition.onerror = () => {
+        status.textContent =
+            "Try again";
+    };
+
+    mic.onclick = () => {
+        recognition.start();
+    };
+}
+</script>
+
+</body>
 </html>
