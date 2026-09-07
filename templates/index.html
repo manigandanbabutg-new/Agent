@@ -1,68 +1,153 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport"
-content="width=device-width,initial-scale=1">
+      content="width=device-width, initial-scale=1">
 
 <title>Nova AI</title>
 
 <style>
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    margin:0;
-    height:100vh;
-    display:grid;
-    place-items:center;
-    background:#09090b;
-    color:white;
-    font-family:Arial;
+    margin: 0;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #09090b;
+    color: white;
+
+    font-family: Arial, sans-serif;
 }
 
 .card {
-    width:300px;
-    padding:35px;
-    text-align:center;
-    border:1px solid #333;
-    border-radius:25px;
-    background:#151518;
+    width: 320px;
+
+    padding: 35px;
+
+    text-align: center;
+
+    background: #151518;
+
+    border: 1px solid #333;
+
+    border-radius: 25px;
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.4);
+}
+
+h2 {
+    margin-bottom: 8px;
+}
+
+p {
+    color: #999;
 }
 
 .mic {
-    width:90px;
-    height:90px;
-    border-radius:50%;
-    border:0;
-    font-size:35px;
-    cursor:pointer;
+    width: 95px;
+    height: 95px;
+
+    margin-top: 20px;
+
+    border: 0;
+
+    border-radius: 50%;
+
+    font-size: 38px;
+
+    cursor: pointer;
+
+    background: white;
+
+    transition: .2s;
+}
+
+.mic:hover {
+    transform: scale(1.08);
+}
+
+.mic.listening {
+    transform: scale(1.12);
+    box-shadow:
+        0 0 0 10px rgba(255,255,255,.08);
 }
 
 .status {
-    margin-top:20px;
-    color:#aaa;
+    margin-top: 25px;
+
+    min-height: 22px;
+
+    color: #aaa;
+
+    font-size: 14px;
 }
+
+.song {
+    margin-top: 12px;
+
+    color: white;
+
+    font-size: 13px;
+
+    word-break: break-word;
+}
+
 </style>
+
 </head>
 
+
 <body>
+
 
 <div class="card">
 
     <h2>Nova AI</h2>
 
-    <p>Say a song name</p>
+    <p>
+        Say a song name
+    </p>
 
-    <button id="mic"
-            class="mic">
+
+    <button
+        id="mic"
+        class="mic">
+
         🎙️
+
     </button>
 
-    <div id="status"
-         class="status">
+
+    <div
+        id="status"
+        class="status">
+
         Tap microphone
+
+    </div>
+
+
+    <div
+        id="song"
+        class="song">
     </div>
 
 </div>
+
+
 
 <script>
 
@@ -72,33 +157,78 @@ const mic =
 const status =
     document.getElementById("status");
 
+const song =
+    document.getElementById("song");
+
+
+
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+
+
+/*
+ * Store the YouTube tab.
+ *
+ * This prevents multiple tabs.
+ */
+
 let youtubeTab = null;
+
 let listening = false;
+
+
+
+/*
+ * Browser support check.
+ */
 
 if (!SpeechRecognition) {
 
     status.textContent =
         "Speech recognition unavailable";
 
-} else {
+    mic.disabled = true;
+
+}
+
+
+
+/*
+ * Speech Recognition.
+ */
+
+else {
 
     const recognition =
         new SpeechRecognition();
 
-    recognition.lang = "en-US";
 
-    recognition.continuous = false;
+    recognition.lang =
+        "en-US";
 
-    recognition.interimResults = false;
 
+    recognition.continuous =
+        false;
+
+
+    recognition.interimResults =
+        false;
+
+
+
+    /*
+     * Microphone started.
+     */
 
     recognition.onstart = () => {
 
         listening = true;
+
+        mic.classList.add(
+            "listening"
+        );
 
         status.textContent =
             "Listening...";
@@ -106,16 +236,40 @@ if (!SpeechRecognition) {
     };
 
 
+
+    /*
+     * Microphone stopped.
+     */
+
     recognition.onend = () => {
 
         listening = false;
 
+        mic.classList.remove(
+            "listening"
+        );
+
     };
 
 
-    recognition.onerror = () => {
+
+    /*
+     * Speech recognition error.
+     */
+
+    recognition.onerror =
+        (event) => {
 
         listening = false;
+
+        mic.classList.remove(
+            "listening"
+        );
+
+        console.log(
+            "Speech error:",
+            event.error
+        );
 
         status.textContent =
             "Try again";
@@ -123,44 +277,79 @@ if (!SpeechRecognition) {
     };
 
 
+
+    /*
+     * Speech received.
+     */
+
     recognition.onresult =
         async (event) => {
+
 
         const command =
             event.results[0][0]
             .transcript
             .trim();
 
-        if (!command)
+
+
+        if (!command) {
+
+            status.textContent =
+                "No song detected";
+
             return;
 
+        }
+
+
+
+        song.textContent =
+            command;
+
+
+
         status.textContent =
-            "Finding " + command;
+            "Finding song...";
+
 
 
         try {
+
+
+            /*
+             * Send command to Flask.
+             */
 
             const response =
                 await fetch(
                     "/youtube/play",
                     {
-                        method:"POST",
+                        method: "POST",
 
-                        headers:{
+                        headers: {
                             "Content-Type":
-                            "application/json"
+                                "application/json"
                         },
 
-                        body:JSON.stringify({
-                            command:command
-                        })
+                        body:
+                            JSON.stringify({
+                                command:
+                                    command
+                            })
                     }
                 );
+
 
 
             const data =
                 await response.json();
 
+
+
+            /*
+             * Backend error.
+             */
 
             if (!data.success) {
 
@@ -169,11 +358,23 @@ if (!SpeechRecognition) {
                     "Song not found";
 
                 return;
+
             }
 
 
+
             /*
-             * Create one YouTube tab.
+             * YouTube video found.
+             */
+
+            status.textContent =
+                "Opening YouTube...";
+
+
+
+            /*
+             * If tab does not exist,
+             * create ONE tab.
              */
 
             if (
@@ -187,11 +388,16 @@ if (!SpeechRecognition) {
                         "NovaYouTube"
                     );
 
-            } else {
+            }
 
-                /*
-                 * Reuse existing tab.
-                 */
+
+
+            /*
+             * If tab already exists,
+             * reuse it.
+             */
+
+            else {
 
                 youtubeTab.location.href =
                     data.url;
@@ -201,27 +407,49 @@ if (!SpeechRecognition) {
             }
 
 
+
+            /*
+             * Final status.
+             */
+
             status.textContent =
-                "Playing " + command;
+                "Playing";
 
         }
 
-        catch(error) {
+
+        catch (error) {
 
             console.error(error);
 
             status.textContent =
-                "Connection error";
+                "Server connection failed";
 
         }
 
     };
 
 
+
+    /*
+     * Microphone button.
+     */
+
     mic.onclick = () => {
+
+
+        /*
+         * Don't start twice.
+         */
 
         if (listening)
             return;
+
+
+
+        status.textContent =
+            "Starting microphone...";
+
 
         try {
 
@@ -229,7 +457,7 @@ if (!SpeechRecognition) {
 
         }
 
-        catch(error) {
+        catch (error) {
 
             console.log(error);
 
@@ -241,5 +469,8 @@ if (!SpeechRecognition) {
 
 </script>
 
+
 </body>
+
 </html>
+```
