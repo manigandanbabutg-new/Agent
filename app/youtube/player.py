@@ -1,34 +1,86 @@
+import os
 import re
-import urllib.parse
+import requests
 
 
-def create_youtube_url(command):
+YOUTUBE_API =
+    "https://www.googleapis.com/youtube/v3/search"
 
-    text = command.lower().strip()
+
+def clean_query(command):
+
+    text = command.strip()
 
     patterns = [
-        r"play\s+(.+)",
         r"play\s+song\s+(.+)",
         r"play\s+music\s+(.+)",
+        r"play\s+(.+)",
         r"youtube\s+(.+)"
     ]
 
-    query = command
-
     for pattern in patterns:
+
         match = re.search(
             pattern,
-            text
+            text,
+            re.IGNORECASE
         )
 
         if match:
-            query = match.group(1)
-            break
+            return match.group(1).strip()
 
-    query = query.strip()
+    return text
 
-    return (
-        "https://www.youtube.com/results"
-        "?search_query="
-        + urllib.parse.quote(query)
-    )
+
+def find_youtube_video(command):
+
+    api_key = os.getenv("YOUTUBE_API_KEY")
+
+    if not api_key:
+        return None
+
+    query = clean_query(command)
+
+    params = {
+        "part": "snippet",
+        "q": query,
+        "type": "video",
+        "maxResults": 1,
+        "key": api_key
+    }
+
+    try:
+
+        response = requests.get(
+            YOUTUBE_API,
+            params=params,
+            timeout=10
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        items = data.get("items", [])
+
+        if not items:
+            return None
+
+        item = items[0]
+
+        return {
+            "video_id":
+                item["id"]["videoId"],
+
+            "title":
+                item["snippet"]["title"]
+        }
+
+    except Exception as error:
+
+        print(
+            "YouTube error:",
+            error
+        )
+
+        return None
