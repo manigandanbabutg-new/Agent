@@ -2,150 +2,79 @@
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Nova AI</title>
 
 <style>
 
-* {
-    box-sizing: border-box;
-}
-
 body {
     margin: 0;
     height: 100vh;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
+    display: grid;
+    place-items: center;
     background: #09090b;
     color: white;
-
-    font-family: Arial, sans-serif;
+    font-family: Arial;
 }
 
 .card {
-    width: 320px;
-
+    width: 300px;
     padding: 35px;
-
     text-align: center;
-
     background: #151518;
-
     border: 1px solid #333;
-
     border-radius: 25px;
-
-    box-shadow:
-        0 20px 50px rgba(0,0,0,.4);
-}
-
-h2 {
-    margin-bottom: 8px;
-}
-
-p {
-    color: #999;
 }
 
 .mic {
-    width: 95px;
-    height: 95px;
-
-    margin-top: 20px;
-
+    width: 90px;
+    height: 90px;
     border: 0;
-
     border-radius: 50%;
-
-    font-size: 38px;
-
+    font-size: 35px;
     cursor: pointer;
-
-    background: white;
-
-    transition: .2s;
-}
-
-.mic:hover {
-    transform: scale(1.08);
-}
-
-.mic.listening {
-    transform: scale(1.12);
-    box-shadow:
-        0 0 0 10px rgba(255,255,255,.08);
 }
 
 .status {
-    margin-top: 25px;
-
-    min-height: 22px;
-
+    margin-top: 20px;
     color: #aaa;
-
-    font-size: 14px;
 }
 
 .song {
-    margin-top: 12px;
-
-    color: white;
-
+    margin-top: 10px;
     font-size: 13px;
+}
 
-    word-break: break-word;
+.listening {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px #ffffff18;
 }
 
 </style>
-
 </head>
 
 
 <body>
 
-
 <div class="card">
 
     <h2>Nova AI</h2>
 
-    <p>
-        Say a song name
-    </p>
+    <p>Say a song name</p>
 
-
-    <button
-        id="mic"
-        class="mic">
-
+    <button id="mic" class="mic">
         🎙️
-
     </button>
 
-
-    <div
-        id="status"
-        class="status">
-
+    <div id="status" class="status">
         Tap microphone
-
     </div>
 
-
-    <div
-        id="song"
-        class="song">
-    </div>
+    <div id="song" class="song"></div>
 
 </div>
-
 
 
 <script>
@@ -160,28 +89,18 @@ const song =
     document.getElementById("song");
 
 
+/* Speech Recognition */
 
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
 
-
-/*
- * Store the YouTube tab.
- *
- * This prevents multiple tabs.
- */
-
 let youtubeTab = null;
-
 let listening = false;
 
 
-
-/*
- * Browser support check.
- */
+/* Browser support */
 
 if (!SpeechRecognition) {
 
@@ -193,33 +112,24 @@ if (!SpeechRecognition) {
 }
 
 
-
-/*
- * Speech Recognition.
- */
+/* Start Voice Agent */
 
 else {
 
     const recognition =
         new SpeechRecognition();
 
-
     recognition.lang =
         "en-US";
 
-
     recognition.continuous =
         false;
-
 
     recognition.interimResults =
         false;
 
 
-
-    /*
-     * Microphone started.
-     */
+    /* Microphone started */
 
     recognition.onstart = () => {
 
@@ -235,10 +145,7 @@ else {
     };
 
 
-
-    /*
-     * Microphone stopped.
-     */
+    /* Microphone stopped */
 
     recognition.onend = () => {
 
@@ -251,23 +158,14 @@ else {
     };
 
 
+    /* Speech error */
 
-    /*
-     * Speech recognition error.
-     */
-
-    recognition.onerror =
-        (event) => {
+    recognition.onerror = () => {
 
         listening = false;
 
         mic.classList.remove(
             "listening"
-        );
-
-        console.log(
-            "Speech error:",
-            event.error
         );
 
         status.textContent =
@@ -276,20 +174,15 @@ else {
     };
 
 
-
-    /*
-     * Speech received.
-     */
+    /* Voice command received */
 
     recognition.onresult =
         async (event) => {
-
 
         const command =
             event.results[0][0]
             .transcript
             .trim();
-
 
 
         if (!command) {
@@ -302,23 +195,16 @@ else {
         }
 
 
-
         song.textContent =
             command;
-
-
 
         status.textContent =
             "Finding song...";
 
 
-
         try {
 
-
-            /*
-             * Send command to Flask.
-             */
+            /* Send command to Flask */
 
             const response =
                 await fetch(
@@ -340,15 +226,11 @@ else {
                 );
 
 
-
             const data =
                 await response.json();
 
 
-
-            /*
-             * Backend error.
-             */
+            /* Backend error */
 
             if (!data.success) {
 
@@ -361,20 +243,7 @@ else {
             }
 
 
-
-            /*
-             * YouTube video found.
-             */
-
-            status.textContent =
-                "Opening YouTube...";
-
-
-
-            /*
-             * If tab does not exist,
-             * create ONE tab.
-             */
+            /* Open / reuse YouTube tab */
 
             if (
                 !youtubeTab ||
@@ -387,16 +256,7 @@ else {
                         "NovaYouTube"
                     );
 
-            }
-
-
-
-            /*
-             * If tab already exists,
-             * reuse it.
-             */
-
-            else {
+            } else {
 
                 youtubeTab.location.href =
                     data.url;
@@ -405,11 +265,6 @@ else {
 
             }
 
-
-
-            /*
-             * Final status.
-             */
 
             status.textContent =
                 "Playing";
@@ -429,34 +284,18 @@ else {
     };
 
 
-
-    /*
-     * Microphone button.
-     */
+    /* Microphone button */
 
     mic.onclick = () => {
 
-
-        /*
-         * Don't start twice.
-         */
-
         if (listening)
             return;
-
-
-
-        status.textContent =
-            "Starting microphone...";
-
 
         try {
 
             recognition.start();
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.log(error);
 
@@ -468,7 +307,5 @@ else {
 
 </script>
 
-
 </body>
-
 </html>
