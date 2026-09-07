@@ -1,15 +1,44 @@
-import os
 import re
-import requests
+import urllib.parse
+import urllib.request
 
 
-YOUTUBE_API =
-    "https://www.googleapis.com/youtube/v3/search"
+def get_vid(query):
+
+    try:
+        encoded = urllib.parse.quote(query)
+
+        url = (
+            "https://www.youtube.com/results"
+            "?search_query=" + encoded
+        )
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            }
+        )
+
+        data = urllib.request.urlopen(
+            request,
+            timeout=5
+        ).read().decode("utf-8", errors="ignore")
+
+        ids = re.findall(
+            r'"videoId":"([^"]+)"',
+            data
+        )
+
+        return ids[0] if ids else None
+
+    except Exception:
+        return None
 
 
-def clean_query(command):
+def create_youtube_url(command):
 
-    text = command.strip()
+    text = command.lower().strip()
 
     patterns = [
         r"play\s+song\s+(.+)",
@@ -18,69 +47,29 @@ def clean_query(command):
         r"youtube\s+(.+)"
     ]
 
+    query = command
+
     for pattern in patterns:
 
         match = re.search(
             pattern,
-            text,
-            re.IGNORECASE
+            text
         )
 
         if match:
-            return match.group(1).strip()
 
-    return text
+            query = match.group(1)
+            break
 
+    query = query.strip()
 
-def find_youtube_video(command):
+    video_id = get_vid(query)
 
-    api_key = os.getenv("YOUTUBE_API_KEY")
-
-    if not api_key:
+    if not video_id:
         return None
 
-    query = clean_query(command)
-
-    params = {
-        "part": "snippet",
-        "q": query,
-        "type": "video",
-        "maxResults": 1,
-        "key": api_key
-    }
-
-    try:
-
-        response = requests.get(
-            YOUTUBE_API,
-            params=params,
-            timeout=10
-        )
-
-        response.raise_for_status()
-
-        data = response.json()
-
-        items = data.get("items", [])
-
-        if not items:
-            return None
-
-        item = items[0]
-
-        return {
-            "video_id":
-                item["id"]["videoId"],
-
-            "title":
-                item["snippet"]["title"]
-        }
-
-    except Exception as error:
-
-        print(
-            "YouTube error:",
-            error
-        )
-
-        return None
+    return (
+        "https://www.youtube.com/embed/"
+        + video_id
+        + "?autoplay=1&mute=0"
+    )
