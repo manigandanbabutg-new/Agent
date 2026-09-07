@@ -1,76 +1,146 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport"
 content="width=device-width,initial-scale=1">
 
 <title>Nova AI</title>
 
 <style>
+
 body {
-    margin:0;
-    height:100vh;
-    display:grid;
-    place-items:center;
-    background:#09090b;
-    color:white;
-    font-family:Arial;
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #09090b;
+    color: white;
+    font-family: Arial;
 }
 
 .card {
-    width:300px;
-    padding:35px;
-    text-align:center;
-    border:1px solid #333;
-    border-radius:25px;
-    background:#151518;
+    width: 360px;
+    padding: 25px;
+    text-align: center;
+    border: 1px solid #333;
+    border-radius: 25px;
+    background: #151518;
+}
+
+.player {
+    display: none;
+    margin-top: 20px;
+}
+
+.player iframe {
+    width: 100%;
+    height: 200px;
+    border: 0;
+    border-radius: 15px;
 }
 
 .mic {
-    width:90px;
-    height:90px;
-    border-radius:50%;
-    border:0;
-    font-size:35px;
-    cursor:pointer;
+    width: 90px;
+    height: 90px;
+    margin-top: 20px;
+    border-radius: 50%;
+    border: 0;
+    font-size: 35px;
+    cursor: pointer;
 }
 
 .status {
-    margin-top:20px;
-    color:#aaa;
+    margin-top: 20px;
+    color: #aaa;
 }
+
+.song {
+    margin-top: 12px;
+    color: #fff;
+}
+
 </style>
+
 </head>
 
 <body>
 
 <div class="card">
+
     <h2>Nova AI</h2>
+
     <p>Say a song name</p>
 
-    <button id="mic"
-            class="mic">
+    <div id="player"
+         class="player">
+
+        <iframe
+            id="youtube"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+        </iframe>
+
+    </div>
+
+    <button
+        id="mic"
+        class="mic">
+
         🎙️
+
     </button>
 
-    <div id="status"
-         class="status">
+    <div
+        id="status"
+        class="status">
+
         Tap microphone
+
     </div>
+
+    <div
+        id="song"
+        class="song">
+    </div>
+
 </div>
 
 <script>
-const mic = document.getElementById("mic");
-const status = document.getElementById("status");
+
+const mic =
+    document.getElementById("mic");
+
+const status =
+    document.getElementById("status");
+
+const player =
+    document.getElementById("player");
+
+const youtube =
+    document.getElementById("youtube");
+
+const song =
+    document.getElementById("song");
+
 
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+
+let listening = false;
+
+
 if (!SpeechRecognition) {
+
     status.textContent =
         "Speech recognition unavailable";
+
 } else {
 
     const recognition =
@@ -78,52 +148,133 @@ if (!SpeechRecognition) {
 
     recognition.lang = "en-US";
 
+    recognition.continuous = false;
+
+    recognition.interimResults = false;
+
+
     recognition.onstart = () => {
+
+        listening = true;
+
         status.textContent =
             "Listening...";
+
     };
 
-    recognition.onresult = async (event) => {
 
-        const command =
-            event.results[0][0].transcript;
+    recognition.onend = () => {
 
-        status.textContent =
-            "Playing: " + command;
+        listening = false;
 
-        const response =
-            await fetch("/youtube/play", {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-                body: JSON.stringify({
-                    command: command
-                })
-            });
-
-        const data =
-            await response.json();
-
-        if (data.success) {
-            window.open(
-                data.url,
-                "_blank"
-            );
-        }
     };
+
 
     recognition.onerror = () => {
+
+        listening = false;
+
         status.textContent =
             "Try again";
+
     };
 
-    mic.onclick = () => {
-        recognition.start();
+
+    recognition.onresult =
+        async (event) => {
+
+        const command =
+            event.results[0][0]
+            .transcript
+            .trim();
+
+        if (!command)
+            return;
+
+
+        status.textContent =
+            "Finding song...";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/youtube/play",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            command: command
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!data.success) {
+
+                status.textContent =
+                    data.message ||
+                    "Song not found";
+
+                return;
+
+            }
+
+
+            song.textContent =
+                data.title;
+
+
+            youtube.src =
+                "https://www.youtube.com/embed/" +
+                data.video_id +
+                "?autoplay=1";
+
+
+            player.style.display =
+                "block";
+
+
+            status.textContent =
+                "Playing";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            status.textContent =
+                "Something went wrong";
+
+        }
+
     };
+
+
+    mic.onclick = () => {
+
+        if (listening)
+            return;
+
+        recognition.start();
+
+    };
+
 }
+
 </script>
 
 </body>
+
 </html>
+```
