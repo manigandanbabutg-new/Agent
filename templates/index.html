@@ -1,71 +1,47 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport"
 content="width=device-width,initial-scale=1">
 
 <title>Nova AI</title>
 
 <style>
-
 body {
-    margin: 0;
-    height: 100vh;
-    display: grid;
-    place-items: center;
-    background: #09090b;
-    color: white;
-    font-family: Arial;
+    margin:0;
+    height:100vh;
+    display:grid;
+    place-items:center;
+    background:#09090b;
+    color:white;
+    font-family:Arial;
 }
 
 .card {
-    width: 360px;
-    padding: 25px;
-    text-align: center;
-    border: 1px solid #333;
-    border-radius: 25px;
-    background: #151518;
-}
-
-.player {
-    display: none;
-    margin-top: 20px;
-}
-
-.player iframe {
-    width: 100%;
-    height: 200px;
-    border: 0;
-    border-radius: 15px;
+    width:300px;
+    padding:35px;
+    text-align:center;
+    border:1px solid #333;
+    border-radius:25px;
+    background:#151518;
 }
 
 .mic {
-    width: 90px;
-    height: 90px;
-    margin-top: 20px;
-    border-radius: 50%;
-    border: 0;
-    font-size: 35px;
-    cursor: pointer;
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    border:0;
+    font-size:35px;
+    cursor:pointer;
 }
 
 .status {
-    margin-top: 20px;
-    color: #aaa;
+    margin-top:20px;
+    color:#aaa;
 }
-
-.song {
-    margin-top: 12px;
-    color: #fff;
-}
-
 </style>
-
 </head>
 
 <body>
@@ -76,36 +52,14 @@ body {
 
     <p>Say a song name</p>
 
-    <div id="player"
-         class="player">
-
-        <iframe
-            id="youtube"
-            allow="autoplay; encrypted-media"
-            allowfullscreen>
-        </iframe>
-
-    </div>
-
-    <button
-        id="mic"
-        class="mic">
-
+    <button id="mic"
+            class="mic">
         🎙️
-
     </button>
 
-    <div
-        id="status"
-        class="status">
-
+    <div id="status"
+         class="status">
         Tap microphone
-
-    </div>
-
-    <div
-        id="song"
-        class="song">
     </div>
 
 </div>
@@ -118,23 +72,12 @@ const mic =
 const status =
     document.getElementById("status");
 
-const player =
-    document.getElementById("player");
-
-const youtube =
-    document.getElementById("youtube");
-
-const song =
-    document.getElementById("song");
-
-
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
-
+let youtubeTab = null;
 let listening = false;
-
 
 if (!SpeechRecognition) {
 
@@ -191,9 +134,8 @@ if (!SpeechRecognition) {
         if (!command)
             return;
 
-
         status.textContent =
-            "Finding song...";
+            "Finding " + command;
 
 
         try {
@@ -202,15 +144,15 @@ if (!SpeechRecognition) {
                 await fetch(
                     "/youtube/play",
                     {
-                        method: "POST",
+                        method:"POST",
 
-                        headers: {
+                        headers:{
                             "Content-Type":
-                                "application/json"
+                            "application/json"
                         },
 
-                        body: JSON.stringify({
-                            command: command
+                        body:JSON.stringify({
+                            command:command
                         })
                     }
                 );
@@ -227,34 +169,49 @@ if (!SpeechRecognition) {
                     "Song not found";
 
                 return;
+            }
+
+
+            /*
+             * Create one YouTube tab.
+             */
+
+            if (
+                !youtubeTab ||
+                youtubeTab.closed
+            ) {
+
+                youtubeTab =
+                    window.open(
+                        data.url,
+                        "NovaYouTube"
+                    );
+
+            } else {
+
+                /*
+                 * Reuse existing tab.
+                 */
+
+                youtubeTab.location.href =
+                    data.url;
+
+                youtubeTab.focus();
 
             }
 
 
-            song.textContent =
-                data.title;
-
-
-            youtube.src =
-                "https://www.youtube.com/embed/" +
-                data.video_id +
-                "?autoplay=1";
-
-
-            player.style.display =
-                "block";
-
-
             status.textContent =
-                "Playing";
+                "Playing " + command;
 
+        }
 
-        } catch (error) {
+        catch(error) {
 
             console.error(error);
 
             status.textContent =
-                "Something went wrong";
+                "Connection error";
 
         }
 
@@ -266,7 +223,17 @@ if (!SpeechRecognition) {
         if (listening)
             return;
 
-        recognition.start();
+        try {
+
+            recognition.start();
+
+        }
+
+        catch(error) {
+
+            console.log(error);
+
+        }
 
     };
 
@@ -275,6 +242,4 @@ if (!SpeechRecognition) {
 </script>
 
 </body>
-
 </html>
-```
