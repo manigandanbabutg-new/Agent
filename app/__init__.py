@@ -1,4 +1,4 @@
-from flask import Flask, render_templates
+from flask import Flask, render_template
 from flask_cors import CORS
 
 from app.youtube import youtube_bp
@@ -19,7 +19,7 @@ def create_app():
 
     @app.route("/")
     def home():
-        return render_templates("index.html")
+        return render_template("index.html")
 
     @app.route("/health")
     def health():
