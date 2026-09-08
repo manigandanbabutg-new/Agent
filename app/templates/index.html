@@ -9,20 +9,9 @@
 
     <h1>🤖 Nova AI</h1>
 
-    <p id="status">Connecting...</p>
+    <h2>✅ Backend Connected Successfully</h2>
 
-    <script>
-        fetch("/test")
-            .then(response => response.text())
-            .then(message => {
-                document.getElementById("status").textContent =
-                    "✅ " + message;
-            })
-            .catch(error => {
-                document.getElementById("status").textContent =
-                    "❌ Backend not connected";
-            });
-    </script>
+    <p>Flask server is running.</p>
 
 </body>
 
